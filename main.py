@@ -167,6 +167,7 @@ class Hero(Creature):
         self.xp += x
     
     def refreshXP(self) :
+        """If the XP is big enough, the hero win one level and gain strength and HP"""
         if self.xp >= (self.lvl+1)**2:
             for i in range(self.lvl,self.lvl+10) :
                 if self.xp >= i**2 :
