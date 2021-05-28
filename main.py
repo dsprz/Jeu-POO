@@ -98,10 +98,11 @@ class Creature(Element):
     """A creature that occupies the dungeon.
         Is an Element. Has hit points and strength."""
 
-    def __init__(self, name, hp, abbrv="", strength=1):
+    def __init__(self, name, hp, abbrv="", strength=1, xp=0):
         Element.__init__(self, name, abbrv)
         self.hp = hp
         self.strength = strength
+        self.xp = xp
 
     def description(self):
         """Description of the creature"""
@@ -109,11 +110,13 @@ class Creature(Element):
 
     def meet(self, other):
         """The creature is encountered by an other creature.
-            The other one hits the creature. Return True if the creature is dead."""
+            The other one hits the creature. Return True and give the hero XP if the creature is dead."""
         self.hp -= other.strength
         theGame().addMessage("The " + other.name + " hits the " + self.description())
         if self.hp > 0:
             return False
+        other.addXP(self.xp)
+        other.refreshXP()
         return True
 
 
@@ -121,9 +124,10 @@ class Hero(Creature):
     """The hero of the game.
         Is a creature. Has an inventory of elements. """
 
-    def __init__(self, name="Hero", hp=10, abbrv="@", strength=2):
-        Creature.__init__(self, name, hp, abbrv, strength)
+    def __init__(self, name="Hero", hp=10, abbrv="@", strength=2, xp=0,lvl=1):
+        Creature.__init__(self, name, hp, abbrv, strength,xp)
         self._inventory = []
+        self.lvl = lvl
 
     def description(self):
         """Description of the hero"""
@@ -157,6 +161,22 @@ class Hero(Creature):
             raise ValueError('Equipment ' + elem.name + 'not in inventory')
         if elem.use(self):
             self._inventory.remove(elem)
+    
+    def addXP(self,x) :
+        """Add x XP's points to the hero"""
+        self.xp += x
+    
+    def refreshXP(self) :
+        """If the XP is big enough, the hero win one level and gain strength and HP"""
+        if self.xp >= (self.lvl+1)**2:
+            for i in range(self.lvl,self.lvl+10) :
+                if self.xp >= i**2 :
+                    self.lvl+=1
+                    self.xp = self.xp-(i**2)
+                    self.hp = 8 + self.lvl*2
+                    self.strength+=1
+                else :
+                    break
 
 
 class Equipment(Element):
@@ -424,8 +444,10 @@ class Game(object):
                   3: [Equipment("portoloin", "w", usage=lambda self, hero: teleport(hero, False))], \
                   }
     """ available monsters """
-    monsters = {0: [Creature("Goblin", 4), Creature("Bat", 2, "W")],
-                1: [Creature("Ork", 6, strength=2), Creature("Blob", 10)], 5: [Creature("Dragon", 20, strength=3)]}
+    monsters = {
+                0: [Creature("Goblin", 4,xp=4), Creature("Bat", 2, "W",xp=2)],
+                1: [Creature("Ork", 6, strength=2,xp=6), Creature("Blob", 10,xp=10)], 
+                5: [Creature("Dragon", 20, strength=3,xp=20)]}
 
     """ available actions """
     _actions = {'z': lambda h: theGame().floor.move(h, Coord(0, -1)), \
@@ -506,6 +528,21 @@ def theGame(game=Game()):
     """Game singleton"""
     return game
 
+m = Map()
+print(m.hero.xp)
+print(m.hero.lvl)
+print(m.hero.hp,m.hero.strength)
+
+Creature("Bat",1,xp=6).meet(m.hero)
+print(m.hero.xp)
+print(m.hero.lvl)
+print(m.hero.hp,m.hero.strength)
+
+Creature("Bat",3,xp=10).meet(m.hero)
+print(m.hero.xp)
+print(m.hero.lvl)
+print(m.hero.hp,m.hero.strength)
 
 getch = _find_getch()
-theGame().play()
+"""
+theGame().play()"""
