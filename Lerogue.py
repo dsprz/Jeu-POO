@@ -142,7 +142,7 @@ class Hero(Creature):
         return Creature.description(self) + str(self._inventory)
 
     def fullDescription(self):
-        """Complete description of the hero"""
+        ""r"Complete description of the hero"""
         res = ''
         for e in self.__dict__:
             if e[0] != '_':
@@ -151,7 +151,7 @@ class Hero(Creature):
         return res
 
     def checkEquipment(self, o):
-        """Check if o is an Equipment."""
+        ""r"Check if o is an Equipment."""
         if not isinstance(o, Equipment):
             raise TypeError('Not a Equipment')
 
@@ -252,54 +252,68 @@ class Map(object):
         'q': Coord(-1, 0)
     }  # four direction user keys
     empty = ' '  # A non walkable cell
+    stairs = 'stairs'
 
     def __init__(self, size=20, hero=None):
         self._mat = []
         self._elem = {}
         self._rooms = []
         self._roomsToReach = []
-
+        self.dist=3
         for i in range(size):
             self._mat.append([Map.empty] * size)
         if hero is None:
             hero = Hero()
         self.hero = hero
-        self.generateRooms(7)
+        self.generateRooms(15)
         self.reachAllRooms()
-        self.put(self._rooms[0].center(), hero)
         for r in self._rooms:
             r.decorate(self)
+
+        nb = random.randint(1,len(self._rooms)-1)
+        b=self._rooms[nb].center()
+        self._mat[b.y][b.x]='stairs'
 
     def dessineSol(self):
         for i in range(len(self._mat)):
             for j in range(len(self._mat[i])):
-                if self._mat[i][j] != Map.empty:
-                    canvas.create_image(j * 50,
-                                        i * 50,
-                                        anchor=NW,
-                                        image=textures['map']['sol'])
+                if self._mat[i][j] != Map.empty :
+                    if self.affiche(Coord(j,i)) :
+                        canvas.create_image(j * 50,
+                                            i * 50,
+                                            anchor=NW,
+                                            image=textures['map']['sol'])
+                    else:
+                        canvas.create_image(j*50, i*50, anchor = NW, image = textures['map']['solFoncé'])
         canvas.pack()
+    
+    def affiche(self, coord):
+        ### renvoie True si on doit dessiner la case
+        ###  sinon False
+        if self.pos(self.hero).distance(coord) < self.dist :
+            return True
+        return False
 
     def dessineMobs(self):
         for i in range(len(self._mat)):
             for j in range(len(self._mat[i])):
                 el = self._mat[i][j]
                 if isinstance(el, Element):
-                    if el.abbrv == "G":
-                        canvas.create_image(j * 50,
-                                            i * 50,
-                                            anchor=NW,
-                                            image=textures['mobs']['Gobelin'])
+                    if self.affiche(Coord(j,i)):
+                        if el.abbrv == "G":
+                            canvas.create_image(j * 50,
+                                                i * 50,
+                                                anchor=NW,
+                                                image=textures['mobs']['Gobelin'])
 
-                    if el.abbrv == "D":
-                        canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Doge'])
-                    
-                    if el.abbrv == "H":
-                        canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Harvest']),
-                    
-                    if el.abbrv == "B":
-                        canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Blob']),
-
+                        if el.abbrv == "D":
+                            canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Doge'])
+                        
+                        if el.abbrv == "H":
+                            canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Harvest']),
+                        
+                        if el.abbrv == "B":
+                            canvas.create_image(j*50, i*50, anchor=NW, image = textures['mobs']['Blob']),
 
         canvas.pack()
 
@@ -317,15 +331,30 @@ class Map(object):
             for j in range(len(self._mat[i])):
                 el = self._mat[i][j]
                 if isinstance(el, Equipment):
-                    if el.abbrv == 'Moon':
-                        canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['Moonstaff'])
-                    #if el.abbrv == 'hp':
-                        #canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['Health Pot'])
-                    if el.abbrv == 'TNT':
-                        canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['TNT'])
+                    if self.affiche(Coord(j,i)):
+                        if el.abbrv == 'Moon':
+                            canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['Moonstaff'])
+
+                        if el.abbrv == 'TNT':
+                            canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['TNT'])
+
+                        if el.abbrv == "hp":
+                            canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['Health Pot'])
+                        
+                        if el.abbrv == 'Arrow':
+                            canvas.create_image(j*50, i*50, anchor = NW, image = textures['items']['Arrow'])
 
         canvas.pack()
     
+    def dessineStairs(self):
+
+        for i in range(len(self._mat)):
+            for j in range(len(self._mat[i])):
+                if self.affiche(Coord(j,i)):
+                    el = self._mat[i][j]
+                    if el == 'stairs':
+                        canvas.create_image(j*50, i*50, anchor = NW, image = textures['map']['stairs'])
+                        
     def addRoom(self, room):
         """Adds a room in the map."""
         self._roomsToReach.append(room)
@@ -423,14 +452,14 @@ class Map(object):
         return s
 
     def checkCoord(self, c):
-        """Check if the coordinates c is valid in the map."""
+        ""r"Check if the coordinates c is valid in the map."""
         if not isinstance(c, Coord):
             raise TypeError('Not a Coord')
         if not c in self:
             raise IndexError('Out of map coord')
 
     def checkElement(self, o):
-        """Check if o is an Element."""
+        ""r"Check if o is an Element."""
         if not isinstance(o, Element):
             raise TypeError('Not a Element')
 
@@ -465,13 +494,16 @@ class Map(object):
         orig = self.pos(e)
         dest = orig + way
         if dest in self:
-            if self.get(dest) == Map.ground:
-                self._mat[orig.y][orig.x] = Map.ground
-                self._mat[dest.y][dest.x] = e
-                self._elem[e] = dest
-            elif self.get(dest) != Map.empty and self.get(dest).meet(
-                    e) and self.get(dest) != self.hero:
-                self.rm(dest)
+            if self.get(dest) == Map.stairs:
+                theGame().newFloor()
+            else:
+                if self.get(dest) == Map.ground:
+                    self._mat[orig.y][orig.x] = Map.ground
+                    self._mat[dest.y][dest.x] = e
+                    self._elem[e] = dest
+                elif self.get(dest) != Map.empty and self.get(dest).meet(
+                        e) and self.get(dest) != self.hero:
+                    self.rm(dest)
 
     def moveAllMonsters(
         self
@@ -511,7 +543,8 @@ class Game(object):
     """ Class representing game state """
     """ available equipments """
     equipments = {0: [Equipment("Health pot", "hp", usage=lambda self, hero: heal(hero)), \
-                      Equipment("gold", "o")], \
+                      Equipment("gold", "o"),
+                      Equipment("Arrow", "Arrow")], \
                   1: [Equipment("potion", "!", usage=lambda self, hero: teleport(hero, True))], \
                   2: [Equipment("bow", usage=lambda self, hero: throw(1, True)),
                       Equipment('TNT','TNT', usage =lambda self, hero : throw(1,True))  ], \
@@ -526,10 +559,15 @@ class Game(object):
             Creature("Doge",5)
         ],
         1: [Creature("Ork", 6, strength=2),
-            Creature("Blob", 10)],
+            Creature("Blob", 5)],
         5: [Creature("Dragon", 20, strength=3)],
     }
-
+    element = {
+        0:
+        [
+            Element('Stairs', 'stairs')
+        ]
+    }
     """ available actions """
     _actions = {'z': lambda h: theGame().floor.move(h, Coord(0, -1)), \
                 'q': lambda h: theGame().floor.move(h, Coord(-1, 0)), \
@@ -550,12 +588,20 @@ class Game(object):
             hero = Hero()
         self.hero = hero
         self.floor = None
+        self.hero.hp == 30
 
     def buildFloor(self):  ### initialise le floor à une nouvelle map
         self.floor = Map(hero=self.hero)
 
     def newFloor(self):  ### Nouvel étage
+        print ('lol')
+        canvas.delete('all')
+        self.hero.hp+=10
         self.buildFloor()
+
+        self.floor.put(self.floor._rooms[0].center(), self.hero)
+        self.dessineTout()
+        self.press
 
     def addMessage(self, msg):  #### ajoute un message à la liste de messages
 
@@ -593,20 +639,45 @@ class Game(object):
         if c.isdigit() and int(c) in range(len(l)):
             return l[int(c)]
 
+    def dessineTout(self):
+        
+        self.floor.dessineSol()
+        self.floor.dessineStairs()
+
+
+        self.floor.dessineMobs()
+                
+        self.floor.dessineItems()
+        self.floor.dessineHero()
+
+    def stillAlive(self):
+        if self.hero.hp > 0:
+            return True
+        return False
+
+    def press(self, event):
+        event = event.char
+        if self.stillAlive():
+            if event in Game._actions:
+                Game._actions[event](self.hero)
+                self.floor.moveAllMonsters()
+                canvas.delete('all')
+                self.dessineTout()
+                window.update()
+                self.continuer(event)
+
     def play(self):
         """Main game loop"""
-        self.buildFloor()
-        self.floor.dessineSol()
-        self.floor.dessineMobs()
-        self.floor.dessineHero()
-        self.floor.dessineItems()
-        #playsound("I:/jeu Poo/musique jeu/ClosingArgumentDGS.mp3", False)
-        print()
-        print(self.floor)
-        window.mainloop()
-        print("--- Game Over ---")
-
-        
+        cpt=0
+        self.buildFloor()   
+        self.floor.put(self.floor._rooms[0].center(), self.hero)
+        self.dessineTout()
+        playsound(r"C:\Users\vujim\Documents\jeu Poo\musique jeu\ClosingArgumentDGS.mp3", False)
+        window.bind('<Any-KeyPress>',self.press)
+        self.floor.moveAllMonsters()
+    
+    def continuer(self,event):
+        self.press
 
 def theGame(game=Game()):
     """Game singleton"""
@@ -618,32 +689,35 @@ window.state("zoomed")
 
 w, h = window.winfo_screenwidth(), window.winfo_screenheight()
 debut = Label(text='Bienvenue dans le Rogue', font=('Arial 20'))
-
 canvas = Canvas(window, width=w, height=h, bg='black')
-
-gameOver = Label(window, text='Game Over', font=("Arial 20"))
 
 textures = {
     'map': {
-        'murs': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/wall.png")),
-        'sol': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/path.png"))
+        'murs': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\wall.png")),
+        'sol': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\path.png")),
+        'solFoncé': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\path_black.png")),
+        'stairs' : ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\stairs.png"))
     },
     'mobs': {
-        'Harvest': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/harvest.png")), #à redim + trans
-        'Gobelin': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/gobelin (1).png")),
-        'Doge': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/doge.png")), # à redim + trans
-        'Blob' : ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/blob.png"))# à redim + trans
+        'Harvest': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\harvest.png")), #à redim + trans
+        'Gobelin': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\gobelin (1).png")),
+        'Doge': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\doge.png")), # à redim + trans
+        'Blob' : ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\blob.png"))# à redim + trans
     },
     'items': {
-        'TNT': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/TNT.png")),
-        'Health Pot': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/healthpot.png")),
-        'Rainbow Sword': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/sword (2).png")),  ### à redim
-        'Moonstaff': ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/moonstaff(1).png"))
+        'TNT': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\TNT.png")),
+        'Health Pot': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\healthpot.png")),
+        'Rainbow Sword': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\sword (2).png")),  ### à redim
+        'Moonstaff': ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\moonstaff(1).png")),
+        'Arrow' : ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\arrow.png"))
     },  #### à redim
     'hero': {
-        "Hero": ImageTk.PhotoImage(Image.open("I:/jeu Poo/images jeu/monokuma.png"))
+        "Hero": ImageTk.PhotoImage(Image.open(r"C:\Users\vujim\Documents\jeu Poo\images jeu\monokuma.png"))
     }
 }
 
+
 getch = _find_getch()
+window.bind('<KeyPress>',theGame().press)
 theGame().play()
+window.mainloop()
