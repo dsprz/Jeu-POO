@@ -136,6 +136,7 @@ class Hero(Creature):
         self.xp = xp
         self.level = level
         self._inventory = []
+        self._gold = 0
 
     def description(self):
         """Description of the hero"""
@@ -158,7 +159,14 @@ class Hero(Creature):
     def take(self, elem):  ### ajoute elem à l'inventaire du héro
 
         self.checkEquipment(elem)
-        self._inventory.append(elem)
+        if len(self._inventory < 10) :
+            self._inventory.append(elem)
+        if elem.name == "gold" :
+            self._gold+=1
+    
+    def deleteEquipment(self, elem) :
+        self.checkEquipment(elem)
+        self._inventory.remove(elem)
 
     def use(self, elem):
         """Use a piece of equipment"""
@@ -169,7 +177,6 @@ class Hero(Creature):
             raise ValueError('Equipment ' + elem.name + 'not in inventory')
         if elem.use(self):
             self._inventory.remove(elem)
-
 
 class Equipment(Element):
     """A piece of equipment"""
